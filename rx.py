@@ -107,7 +107,7 @@ def receive_image(device):
         # Open the device
         device.open()
         device.set_power_level(
-            PowerLevel.LEVEL_LOWEST
+            PowerLevel.LEVEL_HIGHEST
         )  # Set power level to lowest, [0, 4]
         device.set_sync_ops_timeout(TIMEOUT_FOR_SYNC_OPERATIONS)
         device.set_parameter("DO", bytearray([16]))

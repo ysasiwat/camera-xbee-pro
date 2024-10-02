@@ -71,7 +71,7 @@ def send_image(image_path, device):
     try:
         # Open device
         device.open()
-        device.set_power_level(PowerLevel.LEVEL_LOWEST)  # Set power level to lowest, [0, 4]
+        device.set_power_level(PowerLevel.LEVEL_HIGHEST)  # Set power level to lowest, [0, 4]
         device.set_sync_ops_timeout(TIMEOUT_FOR_SYNC_OPERATIONS)
         # Configure the Node ID using 'set_parameter' method.
         device.set_parameter("DO", bytearray([16]))
