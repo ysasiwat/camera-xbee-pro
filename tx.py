@@ -2,7 +2,7 @@ import os
 import struct
 from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice, PowerLevel
 import time
-
+import cv2
 
 # XBee device configuration
 PORT = "COM6"  # Change this to your XBee COM port
@@ -29,10 +29,17 @@ MAX_RETRIES = 3  # Max number of retries before giving up
 
 def read_image_to_bytes(image_path):
     """
-    Reads an image and returns its byte array.
+    Reads an image using OpenCV and returns its byte array.
     """
-    with open(image_path, "rb") as image_file:
-        return image_file.read()
+    image = cv2.imread(image_path)
+    if image is None:
+        raise ValueError(f"Image at path {image_path} could not be read.")
+    # Use the cvtColor() function to grayscale the image
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Downsample the image (reduce the size by half)
+    downsampled_image = cv2.pyrDown(gray_image)
+    _, buffer = cv2.imencode('.jpg', downsampled_image)
+    return buffer.tobytes()
 
 
 def split_bytes(data, chunk_size):
@@ -92,7 +99,7 @@ def send_image(image_path, device):
                     # Wait for the acknowledgment
                     ack = wait_for_ack(device, frame_counter)
                     if ack:
-                        print(f"ACK received for frame {frame_counter}.")
+                        # print(f"ACK received for frame {frame_counter}.")
                         break
                     else:
                         print(f"Retry {attempt + 1} for frame {frame_counter}...")

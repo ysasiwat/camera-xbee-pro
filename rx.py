@@ -5,6 +5,8 @@ from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice, Po
 import threading
 import atexit
 import os
+import cv2
+import numpy as np
 
 # XBee device configuration
 PORT = "COM5"  # Change this to your XBee COM port
@@ -22,9 +24,21 @@ def save_image(data, output_path):
     """
     Saves the received byte data as an image.
     """
-    with open(output_path, "wb") as image_file:
-        image_file.write(data)
-    print(f"Image saved as {output_path}")
+    # Convert the byte data to a NumPy array
+    nparr = np.frombuffer(data, np.uint8)
+
+    grey_image = cv2.imdecode(nparr, cv2.COLOR_BGR2GRAY)
+
+    # Upsample the image to 200% of its original size
+    upsampled_image = cv2.resize(grey_image, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_LINEAR)
+
+    # Check if the image was loaded successfully
+    if upsampled_image is not None:
+        # Save the image to a file
+        cv2.imwrite(output_path, upsampled_image)
+        print("Image saved successfully!")
+    else:
+        print("Failed to decode image from byte data.")
 
 
 def data_receive_callback(xbee_message):
@@ -37,20 +51,20 @@ def data_receive_callback(xbee_message):
 
     #  str(remote_device).split(" ")[0]
 
-    print(f"Received data from {remote_device}")
+    # print(f"Received data from {remote_device}")
 
     # Unpack the frame counter (first 4 bytes of the payload)
     (frame_counter,) = struct.unpack(">I", payload[:4])
     (frame_counter_end,) = struct.unpack(">I", payload[4:8])
     chunk = payload[8:]  # The rest is the image data
 
-    print(f"Received chunk of size {len(xbee_message.data)}")
-    print(f"Received chunk with frame counter: {frame_counter}")
-    print(f"Received chunk with frame counter end: {frame_counter_end}")
-    print(f"Received chunk at {xbee_message.timestamp}")
+    # print(f"Received chunk of size {len(xbee_message.data)}")
+    # print(f"Received chunk with frame counter: {frame_counter}")
+    # print(f"Received chunk with frame counter end: {frame_counter_end}")
+    # print(f"Received chunk at {xbee_message.timestamp}")
 
     if remote_device not in received_data:
-        print("New device detected. Initializing data.")
+        # print("New device detected. Initializing data.")
         received_data[remote_device] = {
             "frame_counter": -1,
             "frame_counter_end": frame_counter_end - 1,
@@ -59,14 +73,14 @@ def data_receive_callback(xbee_message):
         }
 
     if received_data[remote_device]["frame_counter"] == received_data[remote_device]["frame_counter_end"]:
-        print("All chunks received. Discarding new chunk.")
+        # print("All chunks received. Discarding new chunk.")
         return
 
     if frame_counter != received_data[remote_device]["frame_counter"] + 1:
-        print("Frame counter mismatch. Discarding chunk.")
-        print(
-            f"Expected: {received_data[remote_device]['frame_counter'] + 1}, Received: {frame_counter}"
-        )
+        # print("Frame counter mismatch. Discarding chunk.")
+        # print(
+        #     f"Expected: {received_data[remote_device]['frame_counter'] + 1}, Received: {frame_counter}"
+        # )
         del received_data[remote_device]
         return
 
@@ -82,7 +96,7 @@ def send_ack(dst_address, frame_counter):
     """
     remote_device = RemoteXBeeDevice(device, dst_address.get_64bit_addr())
     ack_payload = struct.pack('>I', frame_counter)
-    print(f"Sending ACK for frame {frame_counter}")
+    # print(f"Sending ACK for frame {frame_counter}")
     device.send_data(remote_device, ack_payload)
 
 def receive_image(device):
